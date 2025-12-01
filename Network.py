@@ -18,8 +18,8 @@ class Network:
 
     def forward(self, x: np.ndarray):
         new_z = x.copy().transpose()
-        z_list = []
-        active_list = []
+        z_list = [new_z.copy()]
+        active_list = [new_z.copy()]
         for weight, bias in zip(self.weights, self.biases):
             new_z = np.dot(weight,new_z) + bias
             z_list.append(new_z)
@@ -32,15 +32,17 @@ class Network:
         weight_grads = []
         bias_grads = []
         last_active = active_list[-1]
-        delta = (last_active - y) * last_active * (1 - last_active)
+        print(y)
+        delta = (last_active - y.transpose()) * last_active * (1 - last_active)
         weight_grads.append(np.dot(delta, np.transpose(active_list[-2])))
         bias_grads.append(delta)
 
-        zaw_list = list(zip(z_list, active_list, self.weights))
-        for i in range(len(zaw_list) - 2, -1, -1):
-            _,_,next_w = zaw_list[i+1]
-            _,a,_ = zaw_list[i]
-            _,a_prev,_ = zaw_list[i-1]
+
+        for i in range(self.num_layers - 2, 0, -1):
+            print("i: ", i)
+            next_w = self.weights[i]
+            a = active_list[i]
+            a_prev = active_list[i-1]
             delta = np.dot(np.transpose(next_w), delta) * a * (1-a)
             weight_grads.append(np.dot(delta, np.transpose(a_prev)))
             bias_grads.append(delta)
@@ -48,20 +50,20 @@ class Network:
         return list(reversed(weight_grads)), list(reversed(bias_grads))
 
     def updates(self, weight_grads: list[np.ndarray], bias_grads: list[np.ndarray]):
-        print('weights: ', len(self.weights))
-        print('weight_grads: ', len(weight_grads))
         for i in range(0, self.num_layers - 1):
-            print('weight: ', self.weights[i].shape)
-            print('weight_grad: ', weight_grads[i].shape)
-            self.weights[i] = self.weights[i] - self.lr * weight_grads[i].mean(axis=1)
+            self.weights[i] = self.weights[i] - self.lr * weight_grads[i]
             self.biases[i] = self.biases[i] - self.lr * bias_grads[i]
 
     def train(self, x: np.ndarray, y: np.ndarray):
+        total_loss = 0.0
         for i in range(0, len(x), self.batch_size):
             step = min(self.batch_size, len(x) - i)
-            z_list, active_list = self.forward(x[i:i+step])
-            weight_grads, bias_grads = self.backward(y[i:i+step], z_list, active_list)
+            x_batch = x[i:i+step]
+            y_batch = y[i:i+step]
+            z_list, active_list = self.forward(x_batch)
+
+            weight_grads, bias_grads = self.backward(y_batch, z_list, active_list)
+            total_loss += 0.5 * np.sum((active_list[-1] - y_batch)**2)/step
             self.updates(weight_grads, bias_grads)
-            break
 
 
