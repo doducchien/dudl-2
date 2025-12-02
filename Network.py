@@ -14,7 +14,7 @@ class Network:
         self.lr = lr
         self.num_layers = len(sizes)
         self.biases = [np.random.randn(y, 1) for y in sizes[1:]]
-        self.weights = [np.random.randn(y,x) for x,y in zip(sizes[:-1], sizes[1:])]
+        self.weights = [np.random.randn(y,x) * 0.01 for x,y in zip(sizes[:-1], sizes[1:])]
         print(len(self.weights))
         print(self.biases[1].shape)
 
@@ -38,6 +38,7 @@ class Network:
         bias_grads = []
         last_active = active_list[-1]
         delta = (last_active - y.transpose()) * last_active * (1 - last_active)
+        # print("delta: ",delta.shape)
         weight_grads.append(np.dot(delta, np.transpose(active_list[-2])))
         bias_grads.append(np.sum(delta, axis=1, keepdims=True))
 
@@ -55,47 +56,25 @@ class Network:
     def updates(self, weight_grads: list[np.ndarray], bias_grads: list[np.ndarray], step: int):
         for i in range(0, self.num_layers - 1):
 
-            self.weights[i] = self.weights[i] - self.lr * weight_grads[i]
-            self.biases[i] = self.biases[i] - self.lr * bias_grads[i]
+            self.weights[i] = self.weights[i] - self.lr * weight_grads[i]/step
+            self.biases[i] = self.biases[i] - self.lr * bias_grads[i]/step
 
 
     def evaluate(self, x_data: np.ndarray, y_data: np.ndarray):
-        """
-        Tính độ chính xác của mạng trên tập dữ liệu đã cho.
-        
-        Args:
-            x_data (np.ndarray): Dữ liệu đầu vào (Input features).
-            y_data (np.ndarray): Nhãn thực tế (đã là One-Hot hoặc chỉ mục).
 
-        Returns:
-            float: Tỷ lệ Accuracy (0.0 đến 1.0).
-        """
-        
-        # 1. Forward data để lấy đầu ra của mạng
         _, active_list = self.forward(x_data)
         
-        # Output a^L (Active List cuối cùng) có shape (num_output, num_samples)
-        output_activations = active_list[-1] 
+        output_activations = active_list[-1]
         
-        # 2. Dự đoán: Lấy chỉ mục nơ-ron có giá trị lớn nhất (MAX)
-        # Trong bài toán phân loại, dự đoán là lớp có xác suất cao nhất.
-        # axis=0 vì các mẫu (samples) nằm dọc theo trục cột.
+
         predictions = np.argmax(output_activations, axis=0) 
         
-        # 3. Chuyển đổi nhãn y_data thành chỉ mục (chuẩn bị để so sánh)
-        
-        # Giả định y_data đầu vào là One-Hot (shape: num_samples, num_output)
+
         if y_data.ndim == 2 and y_data.shape[1] > 1:
-            # Nếu y_data là One-Hot, chuyển nó thành chỉ mục (index)
             y_indices = np.argmax(y_data, axis=1)
         else:
-            # Nếu y_data đã là chỉ mục hoặc có shape (num_samples, 1), 
-            # chúng ta phải đảm bảo nó là vector 1D
             y_indices = y_data.flatten()
-            
-        # 4. Tính Accuracy: So sánh predictions và y_indices
-        # np.sum(predictions == y_indices) đếm số lượng dự đoán đúng
-        # Chia cho tổng số mẫu (len(y_data))
+
         accuracy = np.sum(predictions == y_indices) / len(y_data)
         
         return accuracy
@@ -115,8 +94,8 @@ class Network:
                 weight_grads, bias_grads = self.backward(y_batch, z_list, active_list)
                 batch_loss = 0.5 * np.sum((active_list[-1] - y_batch.transpose())**2)/step
                 total_loss += batch_loss*step
-                batch_iters.set_postfix(batch_loss=f"{batch_loss:.4f}", i=i, refresh=False)
+                batch_iters.set_postfix(batch_loss=f"{batch_loss:.4f}", refresh=False)
                 self.updates(weight_grads, bias_grads,step)
             avg_loss = total_loss/x.shape[0]
-            # train_accuracy = self.evaluate(x, y)
-            # print(f"Epoch {epoch + 1}/{self.epochs} - Avg Loss: {avg_loss:.4f} - Accuracy: {train_accuracy:.4f}")
+            train_accuracy = self.evaluate(x, y)
+            print(f"Epoch {epoch + 1}/{self.epochs} - Avg Loss: {avg_loss:.4f} - Accuracy: {train_accuracy:.4f}")

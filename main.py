@@ -52,5 +52,21 @@ onehot_matrix = np.zeros((y_train.size, 10))
 onehot_matrix[np.arange(y_train.size), y_train] = 1
 y_train = onehot_matrix
 
-network = Network([784,64,16,10], batch_size=32, lr=0.0001, epochs=100)
+# mean = np.mean(X_train)
+# std = np.std(X_train)
+# X_train = (X_train-mean) / (std + 1e-8)
+#
+# mean = np.mean(X_train, axis=1, keepdims=True) # Shape (60000, 1)
+# std = np.std(X_train, axis=1, keepdims=True)
+# X_train = (X_train - mean) / (std + 1e-8)
+
+# Tính dọc theo trục 0 (dọc theo các mẫu dữ liệu)
+mean = np.mean(X_train, axis=0) # Shape ra (784,)
+std = np.std(X_train, axis=0)   # Shape ra (784,)
+
+# Cộng epsilon để tránh chia cho 0 ở những pixel luôn luôn đen (std=0)
+X_train = (X_train - mean) / (std + 1e-8)
+
+
+network = Network([784,512,10], batch_size=128, lr=0.1, epochs=1000)
 network.train(X_train, y_train)
