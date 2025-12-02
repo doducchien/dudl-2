@@ -113,7 +113,7 @@ class Network:
                 z_list, active_list = self.forward(x_batch)
 
                 weight_grads, bias_grads = self.backward(y_batch, z_list, active_list)
-                batch_loss = 0.5 * np.sum((active_list[-1] - y_batch.transpose())**2)
+                batch_loss = 0.5 * np.sum((active_list[-1] - y_batch.transpose())**2)/step
                 total_loss += batch_loss*step
                 batch_iters.set_postfix(batch_loss=f"{batch_loss:.4f}", i=i, refresh=False)
                 self.updates(weight_grads, bias_grads,step)

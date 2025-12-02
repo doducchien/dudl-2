@@ -52,5 +52,5 @@ onehot_matrix = np.zeros((y_train.size, 10))
 onehot_matrix[np.arange(y_train.size), y_train] = 1
 y_train = onehot_matrix
 
-network = Network([784,64,16,10], batch_size=32, lr=0.01, epochs=100)
+network = Network([784,64,16,10], batch_size=32, lr=0.0001, epochs=100)
 network.train(X_train, y_train)
